@@ -11,7 +11,7 @@ local languages = {
 local response_body = [[
     <html>
       <head>
-        <title>Sinatra in Lua? Sure, it is called "Mercury"!</title>
+        <title>Sinatra in Lua? Sure, it is called &quot;Mercury&quot;!</title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
       </head>
       <body>
@@ -43,7 +43,7 @@ end)
 post('/say_hi/', function() 
     if request.POST.name == '' or not request.POST.name then 
         return response_body:format([[
-            Sorry but I do not believe you, I can not have no name ;-)
+            Sorry but I do not believe you, you can not have no name ;-)
             Please <a href="javascript:history.go(-1)">try again</a>.
         ]])
     end
