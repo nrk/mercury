@@ -1,0 +1,16 @@
+Mercury
+... because Sinatra is not the only one performing on the stage.
+-------------------------------------------------------------------------------
+
+Mercury aims to be a Sinatra-like web framework (or DSL, if you like) for 
+creating web applications in Lua, quickly and painlessly.
+
+Mercury is currently in its very early stages of development, it started like 
+an hack and right now it still is nothing more than that. Having said that, I 
+thought that things might get interesting and so I decided to release the 
+actual source code and start working on it to get it properly done.
+
+This README will be updated later with notes and instructions on how to get it 
+working (and even with an explanation for the name of this project :-)).
+
+Want to help or contribute? Drop me a mail to suppakilla{at}gmail.com
