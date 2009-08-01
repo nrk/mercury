@@ -80,12 +80,24 @@ function compile_url_pattern(pattern)
         params   = { },
     }
 
-    -- TODO: this is broken and does not work for complex scenarios, 
-    --       we should take a different approach. More to come.
-    compiled_pattern.pattern = pattern:gsub(':(%w+)', function(param, l)
-        table.insert(compiled_pattern.params, param)
-        return '(.-)'
+    -- TODO: Lua pattern matching is blazing fast compared to regular 
+    --       expressions, but at the same time it is tricky when you 
+    --       need to mimic some of their behaviors.
+    pattern = pattern:gsub("[%(%)%.%%%+%-%%?%[%^%$%*]", function(char)
+        if char == '*' then return ':*' else return '%' .. char end
     end)
+
+    pattern = pattern:gsub(':([%w%*]+)(/?)', function(param, slash)
+        if param == '*' then
+            table.insert(compiled_pattern.params, 'splat')
+        else
+            table.insert(compiled_pattern.params, param)
+        end
+        return '(.-)' .. slash
+    end)
+
+    if pattern:sub(-1) ~= '/' then pattern = pattern .. '/' end
+    compiled_pattern.pattern = '^' .. pattern .. '?$'
 
     return compiled_pattern
 end
@@ -93,13 +105,18 @@ end
 function extract_parameters(pattern, matches)
     params = { }
     for i,k in ipairs(pattern.params) do
-        params[k] = wsapi.util.url_decode(matches[i])
+        if (k == 'splat') then
+            if not params.splat then params.splat = {} end
+            table.insert(params.splat, wsapi.util.url_decode(matches[i]))
+        else
+            params[k] = wsapi.util.url_decode(matches[i])
+        end
     end
     return params
 end
 
 function url_match(pattern, path)
-    local matches = { string.match(path, "^" .. pattern.pattern .. "$") }
+    local matches = { string.match(path, pattern.pattern) }
     if #matches > 0 then
         return true, extract_parameters(pattern, matches)
     else
