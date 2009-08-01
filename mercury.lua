@@ -90,10 +90,12 @@ function compile_url_pattern(pattern)
     pattern = pattern:gsub(':([%w%*]+)(/?)', function(param, slash)
         if param == '*' then
             table.insert(compiled_pattern.params, 'splat')
+            return '(.-)' .. slash
         else
             table.insert(compiled_pattern.params, param)
+            return '([^/?&#]+)' .. slash
         end
-        return '(.-)' .. slash
+
     end)
 
     if pattern:sub(-1) ~= '/' then pattern = pattern .. '/' end
