@@ -1,16 +1,40 @@
 Mercury
 ... because Sinatra is not the only one performing on the stage.
--------------------------------------------------------------------------------
+===============================================================================
+
+-- Introduction ---------------------------------------------------------------
 
 Mercury aims to be a Sinatra-like web framework (or DSL, if you like) for 
 creating web applications in Lua, quickly and painlessly.
+
+  require 'mercury'
+  
+  module('hello', package.seeall, mercury.application)
+  
+  get('/', function() 
+    return "Hello world!"
+  end)
 
 Mercury is currently in its very early stages of development, it started like 
 an hack and right now it still is nothing more than that. Having said that, I 
 thought that things might get interesting and so I decided to release the 
 actual source code and start working on it to get it properly done.
 
+-- About the name -------------------------------------------------------------
+
+"Mercury" because:
+ * like Sinatra, he is a legend of the music history. That is, Freddie Mercury.
+ * most of the cool web projects coded in Lua have astronomical references: 
+    - the Kepler Project (web development platform)
+    - Orbit (MVC framework)
+    - Cosmo (templating system)
+    - Sputnik (wiki engine)
+ * it is the smallest planet in our solar system and the nearest to the Sun... 
+ * ... and Mercury is the smallest web framework and the nearest to the "core".
+
+-- Notes ----------------------------------------------------------------------
+
 This README will be updated later with notes and instructions on how to get it 
-working (and even with an explanation for the name of this project :-)).
+working.
 
 Want to help or contribute? Drop me a mail to suppakilla{at}gmail.com

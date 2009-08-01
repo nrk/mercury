@@ -1,0 +1,14 @@
+ * Investigate the usage of Xavante as a web server for development
+
+ * Write more docs, samples and a test suite
+
+ * Wrap WSAPI in a more convenient way and start investigating how to plug in 
+   a few templating system, like Cosmo[1] and lua-haml[2].
+
+ * Luarocks, baby!
+
+ * The rest :-)
+
+
+[1] http://cosmo.luaforge.net/
+[2] http://github.com/norman/lua-haml/
