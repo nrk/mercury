@@ -7,7 +7,7 @@ require 'base'
 module('mercury', package.seeall)
 
 local route_table = { GET = {}, POST = {}, PUT = {}, DELETE = {} }
-local application_methods = {}, {}
+local application_methods = {}
 
 --
 -- *** application methods *** --
