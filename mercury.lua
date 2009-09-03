@@ -7,31 +7,14 @@ require 'base'
 module('mercury', package.seeall)
 
 local route_table = { GET = {}, POST = {}, PUT = {}, DELETE = {} }
-local application_methods = {}
 
---
--- *** application methods *** --
---
-
-function application_methods.get(path, method, options) 
-    add_route('GET', path, method)
-end
-
-function application_methods.post(path, method, options) 
-    add_route('POST', path, method)
-end
-
-function application_methods.put(path, method, options) 
-    add_route('PUT', path, method)
-end
-
-function application_methods.delete(path, method, options) 
-    add_route('DELETE', path, method)
-end
-
-function application_methods.pass()
-    error({ pass = true })
-end
+local application_methods = {
+    get    = function(path, method, options) add_route('GET', path, method) end,
+    post   = function(path, method, options) add_route('POST', path, method) end,
+    put    = function(path, method, options) add_route('PUT', path, method) end,
+    delete = function(path, method, options) add_route('DELETE', path, method) end,
+    pass   = function() error({ pass = true }) end,
+}
 
 --
 -- *** application *** --
