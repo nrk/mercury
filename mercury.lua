@@ -185,8 +185,13 @@ function run(application, wsapi_env)
         local successful, res = xpcall(handler, debug.traceback)
 
         if successful then 
-            response:write(res or '')
-            return response:finish()
+            if type(res) == 'function' then
+                -- first attempt at streaming responses using coroutines
+                return response.status, response.headers, coroutine.wrap(res)
+            else
+                response:write(res or '')
+                return response:finish()
+            end
         else
             if not res.pass then
                 response.status  = 500
