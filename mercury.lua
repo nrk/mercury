@@ -13,7 +13,10 @@ local application_methods = {
     post   = function(path, method, options) add_route('POST', path, method) end,
     put    = function(path, method, options) add_route('PUT', path, method) end,
     delete = function(path, method, options) add_route('DELETE', path, method) end,
-    pass   = function() error({ pass = true }) end,
+}
+
+local route_methods = {
+    pass   = function() error({ pass = true }) end, 
 }
 
 --
@@ -34,11 +37,6 @@ function application(application, fun)
     application.run = function(wsapi_env) 
         return run(application, wsapi_env)
     end
-
-    application.params     = {}
-    application.env        = {}
-    application.request    = {}
-    application.response   = {}
 
     if fun then 
         setfenv(fun, setmetatable({}, {
@@ -109,15 +107,24 @@ function url_match(pattern, path)
     end
 end
 
-function router(application, verb, path)
+function prepare_route(route, request, response, params)
+    -- TODO: improvements needed
+    return setfenv(route.handler, setmetatable({ 
+        params   = params, 
+        request  = request, 
+        response = response, 
+    }, { __index = function(_, k) return _G[k] or route_methods[k] end }))
+end
+
+function router(application, state, request, response)
+    local verb, path = state.vars.REQUEST_METHOD, state.vars.PATH_INFO
+
     return coroutine.wrap(function() 
         for _, route in pairs(route_table[verb]) do 
             -- TODO: routes should be compiled upon definition
             local match, params = url_match(compile_url_pattern(route.pattern), path)
-            application.params  = params
             if match then 
-                -- TODO: application.params? here? no way...
-                coroutine.yield(route.handler) 
+                coroutine.yield(prepare_route(route, request, response, params)) 
             end
         end
     end)
@@ -168,24 +175,16 @@ function initialize(application, wsapi_env)
     web.input       = wsapi_req.params
     web.cookies     = wsapi_req.cookies
 
-    application.env      = wsapi_env
-    application.request  = wsapi_req
-    application.response = wsapi_res
-
-    return web, wsapi_res
+    return web, wsapi_req, wsapi_res
 end
 
 function run(application, wsapi_env)
-    local request, response = initialize(application, wsapi_env)
+    local state, request, response = initialize(application, wsapi_env)
 
-    for handler in router(application, wsapi_env.REQUEST_METHOD, wsapi_env.PATH_INFO) do
-        -- TODO: I think that in a near future the handler will be setfenv'ed so 
-        --       that params are accessible only in the route environment.
+    for handler in router(application, state, request, response) do
         local successful, res = xpcall(handler, debug.traceback)
 
         if successful then 
-            response.status  = application.response.status
-            response.headers = application.response.headers
             response:write(res or '')
             return response:finish()
         else
