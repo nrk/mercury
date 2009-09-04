@@ -1,3 +1,4 @@
+
 require 'luarocks.require'
 require 'wsapi.request'
 require 'wsapi.response'
@@ -16,7 +17,14 @@ local application_methods = {
 }
 
 local templating_engines = {
-    haml = require 'haml', 
+    haml = function(...)
+        -- TODO: the current environment has to be reset or lua-haml will not work, 
+        --       but honestly I have yet to really understand why :-)
+        setfenv(0, getfenv(2))
+
+        require 'haml'
+        return haml.render(unpack(arg))
+    end, 
 }
 
 local route_methods = {
@@ -25,7 +33,7 @@ local route_methods = {
         -- TODO: seriously, using error here goes beyond being hackish. 
         --       Moving everything to a coroutine-based dispatch to avoid 
         --       using return in the routes could be a viable solution.
-        error({ rendered = templating_engines.haml.render(template, options, locals)})
+        error({ rendered = templating_engines.haml(template, options, locals) })
     end, 
 }
 
