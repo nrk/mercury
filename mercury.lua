@@ -15,8 +15,18 @@ local application_methods = {
     delete = function(path, method, options) add_route('DELETE', path, method) end,
 }
 
+local templating_engines = {
+    haml = require 'haml', 
+}
+
 local route_methods = {
     pass   = function() error({ pass = true }) end, 
+    haml   = function(template, options, locals)
+        -- TODO: seriously, using error here goes beyond being hackish. 
+        --       Moving everything to a coroutine-based dispatch to avoid 
+        --       using return in the routes could be a viable solution.
+        error({ rendered = templating_engines.haml.render(template, options, locals)})
+    end, 
 }
 
 --
@@ -193,6 +203,11 @@ function run(application, wsapi_env)
                 return response:finish()
             end
         else
+            if res and res.rendered then
+                response:write(res.rendered or 'template rendered an empty body')
+                return response:finish()
+            end
+
             if not res.pass then
                 response.status  = 500
                 response.headers = { ['Content-type'] = 'text/html' }
