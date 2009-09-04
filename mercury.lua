@@ -181,8 +181,8 @@ end
 function run(application, wsapi_env)
     local state, request, response = initialize(application, wsapi_env)
 
-    for handler in router(application, state, request, response) do
-        local successful, res = xpcall(handler, debug.traceback)
+    for route in router(application, state, request, response) do
+        local successful, res = xpcall(route, debug.traceback)
 
         if successful then 
             if type(res) == 'function' then
