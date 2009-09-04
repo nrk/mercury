@@ -23,7 +23,7 @@ local templating_engines = {
         setfenv(0, getfenv(2))
 
         require 'haml'
-        return haml.render(unpack(arg))
+        return { render = function() return haml.render(unpack(arg)) end }
     end, 
 }
 
@@ -33,7 +33,7 @@ local route_methods = {
         -- TODO: seriously, using error here goes beyond being hackish. 
         --       Moving everything to a coroutine-based dispatch to avoid 
         --       using return in the routes could be a viable solution.
-        error({ rendered = templating_engines.haml(template, options, locals) })
+        error({ template = templating_engines.haml(template, options, locals) })
     end, 
 }
 
@@ -211,8 +211,8 @@ function run(application, wsapi_env)
                 return response:finish()
             end
         else
-            if res and res.rendered then
-                response:write(res.rendered or 'template rendered an empty body')
+            if res and res.template then
+                response:write(res.template.render() or 'template rendered an empty body')
                 return response:finish()
             end
 
