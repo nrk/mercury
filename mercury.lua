@@ -40,7 +40,7 @@ function application(application, fun)
 
     if fun then 
         setfenv(fun, setmetatable({}, {
-            __index = function(_, k) return _G[k] or application[k] end 
+            __index = function(_, k) return application[k] or _G[k] end
         }))()
     end
 
@@ -113,7 +113,7 @@ function prepare_route(route, request, response, params)
         params   = params, 
         request  = request, 
         response = response, 
-    }, { __index = function(_, k) return _G[k] or route_methods[k] end }))
+    }, { __index = function(_, k) return route_methods[k] or _G[k] end }))
 end
 
 function router(application, state, request, response)
