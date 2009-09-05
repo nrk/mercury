@@ -15,6 +15,13 @@ local application_methods = {
     delete = function(path, method, options) add_route('DELETE', path, method) end,
 }
 
+function yield_template(engine, ...)
+    -- TODO: seriously, using error() here goes beyond being hackish. 
+    --       Moving everything to a coroutine-based dispatch to avoid 
+    --       using return in the routes could be a viable solution.
+    error({ template = engine(unpack(arg)) })
+end
+
 local templating_engines = {
     haml = function(...)
         -- TODO: the current environment has to be reset or lua-haml will not work, 
@@ -29,10 +36,7 @@ local templating_engines = {
 local route_methods = {
     pass   = function() error({ pass = true }) end, 
     haml   = function(template, options, locals)
-        -- TODO: seriously, using error here goes beyond being hackish. 
-        --       Moving everything to a coroutine-based dispatch to avoid 
-        --       using return in the routes could be a viable solution.
-        error({ template = templating_engines.haml(template, options, locals) })
+        yield_template(templating_engines.haml, template, options, locals)
     end, 
 }
 
