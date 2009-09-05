@@ -1,4 +1,3 @@
-
 require 'luarocks.require'
 require 'wsapi.request'
 require 'wsapi.response'
