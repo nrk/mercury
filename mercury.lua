@@ -24,20 +24,19 @@ end
 
 local templating_engines = {
     haml = function(...)
-        -- TODO: the current environment has to be reset or lua-haml will not work, 
-        --       but honestly I have yet to really understand why :-)
-        setfenv(0, getfenv(2))
-
-        require 'haml'
+        local haml = require 'haml'
         return { render = function() return haml.render(unpack(arg)) end }
     end, 
 }
 
 local route_methods = {
     pass   = function() error({ pass = true }) end, 
-    haml   = function(template, options, locals)
-        yield_template(templating_engines.haml, template, options, locals)
-    end, 
+    -- NOTE: we use a table to group template-related methods to prevent name clashes.
+    t = {
+        haml   = function(template, options, locals)
+            yield_template(templating_engines.haml, template, options, locals)
+        end, 
+    },
 }
 
 --
@@ -107,7 +106,7 @@ function compile_url_pattern(pattern)
 end
 
 function extract_parameters(pattern, matches)
-    params = { }
+    local params = { }
     for i,k in ipairs(pattern.params) do
         if (k == 'splat') then
             if not params.splat then params.splat = {} end
@@ -129,12 +128,13 @@ function url_match(pattern, path)
 end
 
 function prepare_route(route, request, response, params)
-    -- TODO: improvements needed
-    return setfenv(route.handler, setmetatable({ 
+    local route_env = {
         params   = params, 
         request  = request, 
         response = response, 
-    }, { __index = function(_, k) return route_methods[k] or _G[k] end }))
+    }
+    for k, v in pairs(route_methods) do route_env[k] = v end
+    return setfenv(route.handler, setmetatable(route_env, { __index = _G }))
 end
 
 function router(application, state, request, response)
@@ -201,9 +201,12 @@ end
 
 function run(application, wsapi_env)
     local state, request, response = initialize(application, wsapi_env)
+    local current_env = getfenv()
 
     for route in router(application, state, request, response) do
+        setfenv(0, getfenv(route))
         local successful, res = xpcall(route, debug.traceback)
+        setfenv(0, current_env)
 
         if successful then 
             if type(res) == 'function' then
