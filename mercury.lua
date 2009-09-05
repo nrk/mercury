@@ -27,6 +27,10 @@ local templating_engines = {
         local haml = require 'haml'
         return { render = function() return haml.render(unpack(arg)) end }
     end, 
+    cosmo = function(...)
+        local cosmo = require 'cosmo'
+        return { render = function() return cosmo.fill(unpack(arg)) end }
+    end, 
 }
 
 local route_methods = {
@@ -35,6 +39,9 @@ local route_methods = {
     t = {
         haml   = function(template, options, locals)
             yield_template(templating_engines.haml, template, options, locals)
+        end, 
+        cosmo  = function(template, values)
+            yield_template(templating_engines.cosmo, template, values)
         end, 
     },
 }
