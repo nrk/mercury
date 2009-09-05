@@ -31,6 +31,9 @@ local templating_engines = {
         local cosmo = require 'cosmo'
         return { render = function() return cosmo.fill(unpack(arg)) end }
     end, 
+    string = function(...)
+        return { render = function() return string.format(unpack(arg)) end }
+    end, 
 }
 
 local route_methods = {
@@ -42,6 +45,9 @@ local route_methods = {
         end, 
         cosmo  = function(template, values)
             yield_template(templating_engines.cosmo, template, values)
+        end, 
+        string = function(template, ...)
+            yield_template(templating_engines.string, template, unpack(arg))
         end, 
     },
 }
