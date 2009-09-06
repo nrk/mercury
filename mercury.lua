@@ -1,4 +1,3 @@
-require 'luarocks.require'
 require 'wsapi.request'
 require 'wsapi.response'
 require 'wsapi.util'
@@ -7,6 +6,7 @@ require 'base'
 module('mercury', package.seeall)
 
 local route_table = { GET = {}, POST = {}, PUT = {}, DELETE = {} }
+local mercury_env, route_env = getfenv(), {}
 
 local application_methods = {
     get    = function(path, method, options) add_route('GET', path, method) end,
@@ -22,35 +22,55 @@ function yield_template(engine, ...)
     error({ template = engine(unpack(arg)) })
 end
 
-local templating_engines = {
-    haml = function(...)
-        local haml = require 'haml'
-        return { render = function() return haml.render(unpack(arg)) end }
-    end, 
-    cosmo = function(...)
-        local cosmo = require 'cosmo'
-        return { render = function() return cosmo.fill(unpack(arg)) end }
-    end, 
-    string = function(...)
-        return { render = function() return string.format(unpack(arg)) end }
-    end, 
-}
+function require_env(lua_module, environment)
+    local current_env = getfenv(0)
+    setfenv(0, environment);
+    local loaded_module = require(lua_module)
+    setfenv(0, current_env);
+    return loaded_module
+end
 
-local route_methods = {
-    pass   = function() error({ pass = true }) end, 
-    -- NOTE: we use a table to group template-related methods to prevent name clashes.
-    t = {
-        haml   = function(template, options, locals)
-            yield_template(templating_engines.haml, template, options, locals)
+--
+-- *** route environment *** --
+--
+
+(function() setfenv(1, setmetatable(route_env, { __index = _G}))
+-- NOTE: glorious trick to setup a different environment for routes. Lua functions 
+--       inherits the environment in which they are *created*!
+
+    local templating_engines = {
+        haml = function(...)
+            mercury_env.require_env('haml', getfenv())
+            return { render = function() return haml.render(unpack(arg)) end }
         end, 
-        cosmo  = function(template, values)
-            yield_template(templating_engines.cosmo, template, values)
+        cosmo = function(...)
+            mercury_env.require_env('cosmo', getfenv())
+            return { render = function() return cosmo.fill(unpack(arg)) end }
         end, 
-        string = function(template, ...)
-            yield_template(templating_engines.string, template, unpack(arg))
+        string = function(...)
+            return { render = function() return string.format(unpack(arg)) end }
         end, 
-    },
-}
+    }
+
+    local route_methods = {
+        pass   = function() error({ pass = true }) end, 
+        -- NOTE: we use a table to group template-related methods to prevent name clashes.
+        t = {
+            haml   = function(template, options, locals)
+                mercury_env.yield_template(templating_engines.haml, template, options, locals)
+            end, 
+            cosmo  = function(template, values)
+                mercury_env.yield_template(templating_engines.cosmo, template, values)
+            end, 
+            string = function(template, ...)
+                mercury_env.yield_template(templating_engines.string, template, unpack(arg))
+            end, 
+        },
+    }
+
+    for k, v in pairs(route_methods) do route_env[k] = v end
+
+setfenv(1, mercury_env) end)()
 
 --
 -- *** application *** --
@@ -83,7 +103,7 @@ end
 function add_route(verb, path, handler, options)
     table.insert(route_table[verb], { 
         pattern = path, 
-        handler = handler, 
+        handler = setfenv(handler, route_env), 
         options = options, 
     })
 end
@@ -94,7 +114,7 @@ function compile_url_pattern(pattern)
         params   = { },
     }
 
-    -- TODO: Lua pattern matching is blazing fast compared to regular 
+    -- NOTE: Lua pattern matching is blazing fast compared to regular 
     --       expressions, but at the same time it is tricky when you 
     --       need to mimic some of their behaviors.
     pattern = pattern:gsub("[%(%)%.%%%+%-%%?%[%^%$%*]", function(char)
@@ -141,13 +161,10 @@ function url_match(pattern, path)
 end
 
 function prepare_route(route, request, response, params)
-    local route_env = {
-        params   = params, 
-        request  = request, 
-        response = response, 
-    }
-    for k, v in pairs(route_methods) do route_env[k] = v end
-    return setfenv(route.handler, setmetatable(route_env, { __index = _G }))
+    route_env.params   = params
+    route_env.request  = request
+    route_env.response = response
+    return route.handler
 end
 
 function router(application, state, request, response)
@@ -163,7 +180,6 @@ function router(application, state, request, response)
         end
     end)
 end
-
 
 function initialize(application, wsapi_env)
     -- TODO: taken from Orbit! It will change soon to adapt 
@@ -214,12 +230,9 @@ end
 
 function run(application, wsapi_env)
     local state, request, response = initialize(application, wsapi_env)
-    local current_env = getfenv()
 
     for route in router(application, state, request, response) do
-        setfenv(0, getfenv(route))
         local successful, res = xpcall(route, debug.traceback)
-        setfenv(0, current_env)
 
         if successful then 
             if type(res) == 'function' then
