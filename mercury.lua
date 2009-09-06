@@ -13,6 +13,10 @@ local application_methods = {
     post   = function(path, method, options) add_route('POST', path, method) end,
     put    = function(path, method, options) add_route('PUT', path, method) end,
     delete = function(path, method, options) add_route('DELETE', path, method) end,
+    helper  = function(name, method) set_helper(route_env, name, method) end, 
+    helpers = function(methods)
+        for k, v in pairs(methods) do set_helper(route_env, k, v) end
+    end, 
 }
 
 function yield_template(engine, ...)
@@ -28,6 +32,10 @@ function require_env(lua_module, environment)
     local loaded_module = require(lua_module)
     setfenv(0, current_env);
     return loaded_module
+end
+
+function set_helper(environment, name, method)
+    environment[name] = setfenv(method, environment)
 end
 
 --
