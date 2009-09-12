@@ -5,8 +5,9 @@ require 'base'
 
 module('mercury', package.seeall)
 
+local mercury_env = getfenv()
+local route_env   = setmetatable({ }, { __index = _G })
 local route_table = { GET = {}, POST = {}, PUT = {}, DELETE = {} }
-local mercury_env, route_env = getfenv(), {}
 
 local application_methods = {
     get    = function(path, method, options) add_route('GET', path, method) end,
@@ -26,14 +27,6 @@ function yield_template(engine, ...)
     error({ template = engine(unpack(arg)) })
 end
 
-function require_env(lua_module, environment)
-    local current_env = getfenv(0)
-    setfenv(0, environment);
-    local loaded_module = require(lua_module)
-    setfenv(0, current_env);
-    return loaded_module
-end
-
 function set_helper(environment, name, method)
     environment[name] = setfenv(method, environment)
 end
@@ -42,17 +35,23 @@ end
 -- *** route environment *** --
 --
 
-(function() setfenv(1, setmetatable(route_env, { __index = _G}))
+(function() setfenv(1, route_env)
 -- NOTE: glorious trick to setup a different environment for routes. Lua functions 
 --       inherits the environment in which they are *created*!
+-- TODO: we should create a function like setup_route_environment(fun)
 
     local templating_engines = {
         haml = function(...)
-            mercury_env.require_env('haml', getfenv())
+            -- NOTE: haml.renderer.render does tricks with getfenv/setfenv, 
+            --       but its environment is the one inherited when you do a 
+            --       require 'haml', which is not even the same of a Mercury 
+            --       application in the most common case of requires put on 
+            --       top of a .lua file. We hijack its environment to the 
+            --       same of routes.
+            haml.renderer.render = setfenv(haml.renderer.render, route_env)
             return { render = function() return haml.render(unpack(arg)) end }
         end, 
         cosmo = function(...)
-            mercury_env.require_env('cosmo', getfenv())
             return { render = function() return cosmo.fill(unpack(arg)) end }
         end, 
         string = function(...)
@@ -99,10 +98,12 @@ function application(application, fun)
         return run(application, wsapi_env)
     end
 
+    local mt = { __index = _G }
+
     if fun then 
-        setfenv(fun, setmetatable({}, {
-            __index = function(_, k) return application[k] or _G[k] end
-        }))()
+        setfenv(fun, setmetatable(application, mt))()
+    else
+        setmetatable(application, mt)
     end
 
     return application
