@@ -15,8 +15,20 @@ local application_methods = {
     put    = function(path, method, options) add_route('PUT', path, method) end,
     delete = function(path, method, options) add_route('DELETE', path, method) end,
     helper  = function(name, method) set_helper(route_env, name, method) end, 
-    helpers = function(methods)
-        for k, v in pairs(methods) do set_helper(route_env, k, v) end
+    helpers = function(helpers)
+        if type(helpers) == 'table' then
+            for k, v in pairs(helpers) do 
+                if type(v) == 'function' then 
+                    set_helper(route_env, k, v)
+                else
+                    route_env[k] = v
+                end
+            end
+        elseif type(helpers) == 'function' then
+            setfenv(helpers, route_env)()
+        else
+            -- TODO: error?
+        end
     end, 
 }
 
