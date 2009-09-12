@@ -43,6 +43,17 @@ function set_helper(environment, name, method)
     environment[name] = setfenv(method, environment)
 end
 
+function hijack_haml(haml_module, env)
+    -- NOTE: Mercury uses various tricks with getfenv/setfenv to set two 
+    --       different environments, one for the application and one for 
+    --       routes. The bad news: those tricks seem to break lua-haml. 
+    --       The good news: we can override the __index metamethod of 
+    --       haml.renderer to hijack look ups of unknown objects so that 
+    --       they are searched in the specified environment. In our case, 
+    --       this environment corresponds to route_env.
+    getmetatable(haml_module.renderer).__index = env
+end
+
 --
 -- *** route environment *** --
 --
@@ -54,13 +65,7 @@ end
 
     local templating_engines = {
         haml = function(...)
-            -- NOTE: haml.renderer.render does tricks with getfenv/setfenv, 
-            --       but its environment is the one inherited when you do a 
-            --       require 'haml', which is not even the same of a Mercury 
-            --       application in the most common case of requires put on 
-            --       top of a .lua file. We hijack its environment to the 
-            --       same of routes.
-            haml.renderer.render = setfenv(haml.renderer.render, route_env)
+            mercury_env.hijack_haml(haml, route_env)
             return { render = function() return haml.render(unpack(arg)) end }
         end, 
         cosmo = function(...)
