@@ -1,7 +1,6 @@
 require 'wsapi.request'
 require 'wsapi.response'
 require 'wsapi.util'
-require 'base'
 
 module('mercury', package.seeall)
 
