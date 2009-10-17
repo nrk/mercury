@@ -41,21 +41,21 @@ get('/', function()
 end)
 
 post('/say_hi/', function() 
-    if request.POST.name == '' or not request.POST.name then 
+    if params.name == '' or not params.name then 
         return response_body:format([[
             Sorry but I do not believe you, you can not have no name ;-)
             Please <a href="javascript:history.go(-1)">try again</a>.
         ]])
     end
 
-    local message = localized_message(request.POST.lang)
+    local message = localized_message(params.lang)
 
     return response_body:format(
-        message:format(request.POST.name) .. 
+        message:format(params.name) .. 
         '<br/><br/>If you do not like POST-based greetings, then ' .. 
         string.format('<a href="../say_hi/%s/%s/">you can try this!</a>', 
-            request.POST.lang or 'en', 
-            request.POST.name
+            params.lang or 'en', 
+            params.name
         )
     )
 end)

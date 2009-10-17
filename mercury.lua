@@ -176,6 +176,12 @@ function extract_parameters(pattern, matches)
     return params
 end
 
+function extract_post_parameters(request, params)
+    for k,v in pairs(request.POST) do
+        if not params[k] then params[k] = v end
+    end
+end
+
 function url_match(pattern, path)
     local matches = { string.match(path, pattern.pattern) }
     if #matches > 0 then
@@ -200,6 +206,7 @@ function router(application, state, request, response)
             -- TODO: routes should be compiled upon definition
             local match, params = url_match(compile_url_pattern(route.pattern), path)
             if match then 
+                if verb == 'POST' then extract_post_parameters(request, params) end
                 coroutine.yield(prepare_route(route, request, response, params)) 
             end
         end
