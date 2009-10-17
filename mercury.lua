@@ -42,15 +42,19 @@ function set_helper(environment, name, method)
     environment[name] = setfenv(method, environment)
 end
 
-function hijack_haml(haml_module, env)
-    -- NOTE: Mercury uses various tricks with getfenv/setfenv to set two 
-    --       different environments, one for the application and one for 
-    --       routes. The bad news: those tricks seem to break lua-haml. 
-    --       The good news: we can override the __index metamethod of 
-    --       haml.renderer to hijack look ups of unknown objects so that 
-    --       they are searched in the specified environment. In our case, 
-    --       this environment corresponds to route_env.
-    getmetatable(haml_module.renderer).__index = env
+--
+-- *** ext functions *** --
+--
+
+function merge_tables(...)
+    local numargs, out = select('#', ...), {}
+    for i = 1, numargs do
+        local t = select(i, ...)
+        if type(t) == "table" then
+            for k, v in pairs(t) do out[k] = v end
+        end
+    end
+    return out
 end
 
 --
@@ -64,7 +68,6 @@ end
 
     local templating_engines = {
         haml = function(...)
-            mercury_env.hijack_haml(haml, route_env)
             return { render = function() return haml.render(unpack(arg)) end }
         end, 
         cosmo = function(...)
@@ -80,7 +83,8 @@ end
         -- NOTE: we use a table to group template-related methods to prevent name clashes.
         t = {
             haml   = function(template, options, locals)
-                mercury_env.yield_template(templating_engines.haml, template, options, locals)
+                local env_with_locals = mercury_env.merge_tables(route_env, locals)
+                mercury_env.yield_template(templating_engines.haml, template, options, env_with_locals)
             end, 
             cosmo  = function(template, values)
                 mercury_env.yield_template(templating_engines.cosmo, template, values)
