@@ -30,13 +30,6 @@ local application_methods = {
     end, 
 }
 
-function yield_template(engine, ...)
-    -- TODO: seriously, using error() here goes beyond being hackish. 
-    --       Moving everything to a coroutine-based dispatch to avoid 
-    --       using return in the routes could be a viable solution.
-    error({ template = engine(unpack(arg)) })
-end
-
 function set_helpers(environment, methods)
     for name, method in pairs(methods) do 
         set_helper(route_env, name, method)
@@ -75,32 +68,42 @@ end
 -- TODO: we should create a function like setup_route_environment(fun)
 
     local templating_engines = {
-        haml = function(...)
-            return { render = function() return haml.render(unpack(arg)) end }
+        haml     = function(template, options, locals)
+            return function(env)
+                return haml.render(template, options, mercury_env.merge_tables(env, locals))
+            end
         end, 
-        cosmo = function(...)
-            return { render = function() return cosmo.fill(unpack(arg)) end }
+        cosmo    = function(template, values)
+            return function(env)
+                return cosmo.fill(template, values)
+            end
         end, 
-        string = function(...)
-            return { render = function() return string.format(unpack(arg)) end }
-        end, 
+        string   = function(template, ...)
+            return function(env)
+                return string.format(template, unpack(arg))
+            end
+        end,
     }
 
     local route_methods = {
         pass   = function() error({ pass = true }) end, 
         -- NOTE: we use a table to group template-related methods to prevent name clashes.
-        t = {
-            haml   = function(template, options, locals)
-                local env_with_locals = mercury_env.merge_tables(route_env, locals)
-                mercury_env.yield_template(templating_engines.haml, template, options, env_with_locals)
-            end, 
-            cosmo  = function(template, values)
-                mercury_env.yield_template(templating_engines.cosmo, template, values)
-            end, 
-            string = function(template, ...)
-                mercury_env.yield_template(templating_engines.string, template, unpack(arg))
-            end, 
-        },
+        t   = setmetatable({ }, {
+            __index = function(env, name)
+                local engine = templating_engines[name]
+
+                if type(engine) == nil then
+                    error('cannot find template renderer "'.. name ..'"')
+                end
+
+                return function(...)
+                    -- TODO: seriously, using error() here goes beyond being hackish. 
+                    --       Moving everything to a coroutine-based dispatch to avoid 
+                    --       using return in the routes could be a viable solution.
+                    error({ template = engine(...) })
+                end
+            end
+        }), 
     }
 
     for k, v in pairs(route_methods) do route_env[k] = v end
@@ -287,7 +290,7 @@ function run(application, wsapi_env)
             end
         else
             if res and res.template then
-                response:write(res.template.render() or 'template rendered an empty body')
+                response:write(res.template(getfenv(route)) or 'template rendered an empty body')
                 return response:finish()
             end
 
