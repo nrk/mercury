@@ -131,7 +131,7 @@ end
 
 function add_route(verb, path, handler, options)
     table.insert(route_table[verb], { 
-        pattern = path, 
+        pattern = compile_url_pattern(path), 
         handler = setfenv(handler, route_env), 
         options = options, 
     })
@@ -207,8 +207,7 @@ function router(application, state, request, response)
 
     return coroutine.wrap(function() 
         for _, route in pairs(route_table[verb]) do 
-            -- TODO: routes should be compiled upon definition
-            local match, params = url_match(compile_url_pattern(route.pattern), path)
+            local match, params = url_match(route.pattern, path)
             if match then 
                 if verb == 'POST' then extract_post_parameters(request, params) end
                 coroutine.yield(prepare_route(route, request, response, params)) 
