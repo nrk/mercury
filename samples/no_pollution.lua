@@ -6,8 +6,10 @@ require 'mercury'
 module(..., package.seeall)
 
 local myapp = mercury.application('no_pollution', function()
+    local app_name = _NAME
+
     get('/', function()
-        return string.format('<h1>Welcome to %s!</h1>', _NAME)
+        return string.format('<h1>Welcome to %s!</h1>', app_name)
     end)
 
     get('/hello/:name', function()
