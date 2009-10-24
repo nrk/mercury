@@ -16,15 +16,14 @@ local application_methods = {
     helper  = function(name, method) set_helper(route_env, name, method) end, 
     helpers = function(helpers)
         if type(helpers) == 'table' then
-            for k, v in pairs(helpers) do 
-                if type(v) == 'function' then 
-                    set_helper(route_env, k, v)
-                else
-                    route_env[k] = v
-                end
-            end
+            set_helpers(route_env, helpers)
         elseif type(helpers) == 'function' then
-            setfenv(helpers, route_env)()
+            local temporary_env = setmetatable({}, { 
+                __newindex = function(e,k,v) 
+                    set_helper(route_env, k, v)
+                end,
+            })
+            setfenv(helpers, temporary_env)()
         else
             -- TODO: error?
         end
@@ -38,7 +37,16 @@ function yield_template(engine, ...)
     error({ template = engine(unpack(arg)) })
 end
 
+function set_helpers(environment, methods)
+    for name, method in pairs(methods) do 
+        set_helper(route_env, name, method)
+    end
+end
+
 function set_helper(environment, name, method)
+    if type(method) ~= 'function' then 
+        error('"' .. name .. '" is an invalid helper, only functions are allowed.') 
+    end
     environment[name] = setfenv(method, environment)
 end
 
