@@ -20,8 +20,8 @@ Please specify a mercury application to boot with Xavante, e.g.:
 end
 
 -- TODO: checks and more options
-
-local application = arg[1]
+if arg[1] == nil then error("please specify a mercury application") end
+local application = arg[1]:gsub('^(.-)%.lua$', '%1')
 
 xavante.HTTP{
     server = {host = "127.0.0.1", port = 7654},
