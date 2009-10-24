@@ -40,7 +40,7 @@ function set_helper(environment, name, method)
     if type(method) ~= 'function' then 
         error('"' .. name .. '" is an invalid helper, only functions are allowed.') 
     end
-    environment[name] = setfenv(method, environment)
+    environment[name] = method
 end
 
 --
@@ -143,7 +143,7 @@ end
 function add_route(verb, path, handler, options)
     table.insert(route_table[verb], { 
         pattern = compile_url_pattern(path), 
-        handler = setfenv(handler, route_env), 
+        handler = handler, 
         options = options, 
     })
 end
@@ -207,10 +207,40 @@ function url_match(pattern, path)
 end
 
 function prepare_route(route, request, response, params)
-    route_env.params   = params
-    route_env.request  = request
-    route_env.response = response
-    return route.handler
+    if not route.environment then 
+        local route_environment = {}
+
+        route_environment.request  = request
+        route_environment.response = response
+
+        route_environment = setmetatable(route_environment, {
+            __index = function(route_environment, name)
+                local upvalue = _G[name]
+
+                if upvalue ~= nil then 
+                    -- we cache the missing methods/values retrieved from the parent 
+                    -- environment in the dynamic route environment for better performances.
+                    -- TODO: this should be optional
+                    route_environment[name] = upvalue
+                    return upvalue
+                end
+            end, 
+        })
+
+        for k, v in pairs(route_env) do
+            if type(v) == 'function' then 
+                route_environment[k] = setfenv(v, route_environment)
+            else
+                route_environment[k] = v
+            end
+        end
+
+        route.environment = route_environment
+    end
+
+    route.environment.params = params
+
+    return setfenv(route.handler, route.environment)
 end
 
 function router(application, state, request, response)
