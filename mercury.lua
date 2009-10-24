@@ -32,7 +32,7 @@ local application_methods = {
 
 function set_helpers(environment, methods)
     for name, method in pairs(methods) do 
-        set_helper(route_env, name, method)
+        set_helper(environment, name, method)
     end
 end
 
