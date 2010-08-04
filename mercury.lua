@@ -83,6 +83,12 @@ end
                 return string.format(template, unpack(arg))
             end
         end,
+        lp       = function(template, values)
+            return function(env)
+                local lp = require 'lp'
+                return lp.fill(template, mercury_env.merge_tables(env, values))
+            end
+        end,    
     }
 
     local route_methods = {

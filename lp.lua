@@ -1,8 +1,8 @@
 ----------------------------------------------------------------------------
 -- Lua Pages Template Engine.
 --
--- Author: Fábio Mascarenhas
--- http://www.lua.inf.puc-rio.br/~mascarenhas/template
+-- Based on: http://www.lua.inf.puc-rio.br/~mascarenhas/template
+-- From: Fabio Mascarenhas
 ---------------------------------------------------------------------------
 
 local find, format, gsub, strsub =
@@ -10,6 +10,7 @@ local find, format, gsub, strsub =
 local concat, tinsert = table.concat, table.insert
 local getfenv, setfenv, setmetatable = getfenv, setfenv, setmetatable
 local assert, loadstring, tostring = assert, loadstring, tostring
+local base = _G
 
 module(...)
 
@@ -39,7 +40,7 @@ end
 function translate(s)
    s = gsub(s, "<%%(.-)%%>", "<?lua %1 ?>")
    local res = {}
-   local start = 1   -- start of untranslated part in `s'
+   local start = 1   -- start of   print("XXXX") untranslated part in `s'
    while true do
       local ip, fp, target, exp, code = find(s, "<%?(%w*)[ \t]*(=?)(.-)%?>", start)
       if not ip then break end
@@ -121,12 +122,14 @@ end
 -- @return String with result of template application
 
 function fill(template, env)
-   local prog = compile(template)
-   local out = {}
-   local outfunc = function (s)
-		      tinsert(out, s)
-		   end
-   prog(env, outfunc)
-   return concat(out)
+  local env  = env or {}
+  local prog = compile(template)
+  local out  = {}
+  local outfunc = function (s)
+        tinsert(out, s)
+     end
+  setmetatable(env, { __index = base }) -- combine with global environment
+  prog(env, outfunc)
+  return concat(out)
 end
 
