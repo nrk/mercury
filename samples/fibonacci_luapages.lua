@@ -1,6 +1,5 @@
 require 'luarocks.require'
 require 'mercury'
-require 'haml'
 
 module("luapages", package.seeall, mercury.application)
 
