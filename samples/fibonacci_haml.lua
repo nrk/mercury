@@ -2,7 +2,7 @@ require 'luarocks.require'
 require 'mercury'
 require 'haml'
 
-module('fibonacci', package.seeall, mercury.application)
+module('fibonacci_haml', package.seeall, mercury.application)
 
 local templates = {
     index = [[

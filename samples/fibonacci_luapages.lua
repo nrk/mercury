@@ -1,7 +1,7 @@
 require 'luarocks.require'
 require 'mercury'
 
-module("luapages", package.seeall, mercury.application)
+module('fibonacci_luapages', package.seeall, mercury.application)
 
 local templates = {
     index = [[
