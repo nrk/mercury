@@ -3,10 +3,10 @@
 Mercury: http://github.com/nrk/mercury/
 Xavante: http://www.keplerproject.org/xavante/
 
-Usage: ./run-with-xavante APPNAME
+Usage: mercury APPNAME
 ]]
 
-require 'luarocks.require'
+pcall(require, 'luarocks.require')
 require 'xavante'
 require 'wsapi.xavante'
 
@@ -31,7 +31,7 @@ xavante.HTTP{
             {
                 match = { "^/(.-)$" },
                 with = wsapi.xavante.makeHandler(application)
-            } 
+            }
         }
     }
 }
