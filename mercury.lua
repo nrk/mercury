@@ -13,13 +13,13 @@ local application_methods = {
     post   = function(path, method, options) add_route('POST', path, method) end,
     put    = function(path, method, options) add_route('PUT', path, method) end,
     delete = function(path, method, options) add_route('DELETE', path, method) end,
-    helper  = function(name, method) set_helper(route_env, name, method) end, 
+    helper  = function(name, method) set_helper(route_env, name, method) end,
     helpers = function(helpers)
         if type(helpers) == 'table' then
             set_helpers(route_env, helpers)
         elseif type(helpers) == 'function' then
-            local temporary_env = setmetatable({}, { 
-                __newindex = function(e,k,v) 
+            local temporary_env = setmetatable({}, {
+                __newindex = function(e,k,v)
                     set_helper(route_env, k, v)
                 end,
             })
@@ -27,18 +27,18 @@ local application_methods = {
         else
             -- TODO: error?
         end
-    end, 
+    end,
 }
 
 function set_helpers(environment, methods)
-    for name, method in pairs(methods) do 
+    for name, method in pairs(methods) do
         set_helper(environment, name, method)
     end
 end
 
 function set_helper(environment, name, method)
-    if type(method) ~= 'function' then 
-        error('"' .. name .. '" is an invalid helper, only functions are allowed.') 
+    if type(method) ~= 'function' then
+        error('"' .. name .. '" is an invalid helper, only functions are allowed.')
     end
     environment[name] = setfenv(method, environment)
 end
@@ -63,7 +63,7 @@ end
 --
 
 (function() setfenv(1, route_env)
--- NOTE: glorious trick to setup a different environment for routes. Lua functions 
+-- NOTE: glorious trick to setup a different environment for routes. Lua functions
 --       inherits the environment in which they are *created*!
 -- TODO: we should create a function like setup_route_environment(fun)
 
@@ -72,12 +72,12 @@ end
             return function(env)
                 return haml.render(template, options, mercury_env.merge_tables(env, locals))
             end
-        end, 
+        end,
         cosmo    = function(template, values)
             return function(env)
                 return cosmo.fill(template, values)
             end
-        end, 
+        end,
         string   = function(template, ...)
             return function(env)
                 return string.format(template, unpack(arg))
@@ -88,11 +88,11 @@ end
                 local lp = require 'lp'
                 return lp.fill(template, mercury_env.merge_tables(env, values))
             end
-        end,    
+        end,
     }
 
     local route_methods = {
-        pass   = function() error({ pass = true }) end, 
+        pass   = function() error({ pass = true }) end,
         -- NOTE: we use a table to group template-related methods to prevent name clashes.
         t   = setmetatable({ }, {
             __index = function(env, name)
@@ -103,13 +103,13 @@ end
                 end
 
                 return function(...)
-                    -- TODO: seriously, using error() here goes beyond being hackish. 
-                    --       Moving everything to a coroutine-based dispatch to avoid 
+                    -- TODO: seriously, using error() here goes beyond being hackish.
+                    --       Moving everything to a coroutine-based dispatch to avoid
                     --       using return in the routes could be a viable solution.
                     error({ template = engine(...) })
                 end
             end
-        }), 
+        }),
     }
 
     for k, v in pairs(route_methods) do route_env[k] = v end
@@ -131,13 +131,13 @@ function application(application, fun)
         application[k] = v
     end
 
-    application.run = function(wsapi_env) 
+    application.run = function(wsapi_env)
         return run(application, wsapi_env)
     end
 
     local mt = { __index = _G }
 
-    if fun then 
+    if fun then
         setfenv(fun, setmetatable(application, mt))()
     else
         setmetatable(application, mt)
@@ -147,21 +147,21 @@ function application(application, fun)
 end
 
 function add_route(verb, path, handler, options)
-    table.insert(route_table[verb], { 
-        pattern = compile_url_pattern(path), 
-        handler = setfenv(handler, route_env), 
-        options = options, 
+    table.insert(route_table[verb], {
+        pattern = compile_url_pattern(path),
+        handler = setfenv(handler, route_env),
+        options = options,
     })
 end
 
 function compile_url_pattern(pattern)
-    local compiled_pattern = { 
+    local compiled_pattern = {
         original = pattern,
         params   = { },
     }
 
-    -- NOTE: Lua pattern matching is blazing fast compared to regular 
-    --       expressions, but at the same time it is tricky when you 
+    -- NOTE: Lua pattern matching is blazing fast compared to regular
+    --       expressions, but at the same time it is tricky when you
     --       need to mimic some of their behaviors.
     pattern = pattern:gsub("[%(%)%.%%%+%-%%?%[%^%$%*]", function(char)
         if char == '*' then return ':*' else return '%' .. char end
@@ -222,24 +222,24 @@ end
 function router(application, state, request, response)
     local verb, path = state.vars.REQUEST_METHOD, state.vars.PATH_INFO
 
-    return coroutine.wrap(function() 
-        for _, route in pairs(route_table[verb]) do 
+    return coroutine.wrap(function()
+        for _, route in pairs(route_table[verb]) do
             local match, params = url_match(route.pattern, path)
-            if match then 
+            if match then
                 if verb == 'POST' then extract_post_parameters(request, params) end
-                coroutine.yield(prepare_route(route, request, response, params)) 
+                coroutine.yield(prepare_route(route, request, response, params))
             end
         end
     end)
 end
 
 function initialize(application, wsapi_env)
-    -- TODO: taken from Orbit! It will change soon to adapt 
+    -- TODO: taken from Orbit! It will change soon to adapt
     --       request and response to a more suitable model.
-    local web = { 
-        status = "200 Ok", 
+    local web = {
+        status = "200 Ok",
         headers  = { ["Content-Type"]= "text/html" },
-        cookies  = {} 
+        cookies  = {}
     }
 
     web.vars     = wsapi_env
@@ -267,9 +267,9 @@ function initialize(application, wsapi_env)
     web.path_info = wsapi_req.path_info
 
     if not wsapi_env.PATH_TRANSLATED == '' then
-        web.path_translated = wsapi_env.PATH_TRANSLATED 
+        web.path_translated = wsapi_env.PATH_TRANSLATED
     else
-        web.path_translated = wsapi_env.SCRIPT_FILENAME 
+        web.path_translated = wsapi_env.SCRIPT_FILENAME
     end
 
     web.script_name = wsapi_env.SCRIPT_NAME
@@ -286,7 +286,7 @@ function run(application, wsapi_env)
     for route in router(application, state, request, response) do
         local successful, res = xpcall(route, debug.traceback)
 
-        if successful then 
+        if successful then
             if type(res) == 'function' then
                 -- first attempt at streaming responses using coroutines
                 return response.status, response.headers, coroutine.wrap(res)
