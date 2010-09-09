@@ -223,7 +223,7 @@ function router(application, state, request, response)
     local verb, path = state.vars.REQUEST_METHOD, state.vars.PATH_INFO
 
     return coroutine.wrap(function()
-        for _, route in pairs(route_table[verb]) do
+        for _, route in ipairs(route_table[verb]) do
             local match, params = url_match(route.pattern, path)
             if match then
                 if verb == 'POST' then extract_post_parameters(request, params) end
