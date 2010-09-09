@@ -223,7 +223,8 @@ function router(application, state, request, response)
     local verb, path = state.vars.REQUEST_METHOD, state.vars.PATH_INFO
 
     return coroutine.wrap(function()
-        for _, route in ipairs(route_table[verb]) do
+        local routes = verb == "HEAD" and route_table["GET"] or route_table[verb]
+        for _, route in ipairs(routes) do
             local match, params = url_match(route.pattern, path)
             if match then
                 if verb == 'POST' then extract_post_parameters(request, params) end
