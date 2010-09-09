@@ -14,7 +14,7 @@ if not arg[1] then
     print([[
 Please specify a mercury application to boot with Xavante, e.g.:
 
-  ./run-with-xavante greetings
+  mercury greetings
 ]])
     os.exit(1)
 end
