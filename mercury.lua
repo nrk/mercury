@@ -319,5 +319,5 @@ function run(application, wsapi_env)
         coroutine.yield('</body></html>')
     end
 
-    return 500, { ['Content-type'] = 'text/html' }, coroutine.wrap(emit_no_routes_matched)
+    return 404, { ['Content-type'] = 'text/html' }, coroutine.wrap(emit_no_routes_matched)
 end
