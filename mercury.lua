@@ -238,7 +238,7 @@ function initialize(application, wsapi_env)
     -- TODO: taken from Orbit! It will change soon to adapt
     --       request and response to a more suitable model.
     local web = {
-        status = "200 Ok",
+        status   = 200,
         headers  = { ["Content-Type"]= "text/html" },
         cookies  = {}
     }
