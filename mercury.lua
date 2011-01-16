@@ -69,8 +69,9 @@ end
 
     local templating_engines = {
         haml     = function(template, options, locals)
+            local haml = haml.new(options)
             return function(env)
-                return haml.render(template, options, mercury_env.merge_tables(env, locals))
+                return haml:render(template, mercury_env.merge_tables(env, locals))
             end
         end,
         cosmo    = function(template, values)
