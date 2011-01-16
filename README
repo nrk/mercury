@@ -32,6 +32,19 @@ actual source code and start working on it to get it properly done.
  * it is the smallest planet in our solar system and the nearest to the Sun... 
  * ... and Mercury is the smallest web framework and the nearest to the "core".
 
+-- How to execute the examples ------------------------------------------------
+
+If you have installed Mercury using LuaRocks you should have the 'mercury' 
+executable file available in your PATH, you just need to enter in the samples 
+directory and launch one of the applications like this:
+
+    mercury greetings
+
+If, instead, you have simply cloned the repository, you can launch one of the 
+example applications from the root directory of the project like this:
+
+    LUA_PATH="samples/?.lua;;" ./bin/mercury greetings
+
 -- Notes ----------------------------------------------------------------------
 
 This README will be updated later with notes and instructions on how to get it 
