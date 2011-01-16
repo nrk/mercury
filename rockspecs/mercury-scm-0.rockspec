@@ -1,7 +1,7 @@
 package = "mercury"
 version = "scm-0"
 source = {
-    url = "git://github.com/norman/mercury.git"
+    url = "git://github.com/nrk/mercury.git"
 }
 description = {
     summary = "A small framework for creating web apps in Lua",
@@ -10,7 +10,7 @@ description = {
         creating web applications in Lua, quickly and painlessly.
     ]],
     license = "MIT/X11",
-    homepage = "git://github.com/nrk/mercury.git"
+    homepage = "http://github.com/nrk/mercury"
 }
 dependencies = {
     "lua >= 5.1",
