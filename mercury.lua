@@ -25,7 +25,7 @@ local application_methods = {
             })
             setfenv(helpers, temporary_env)()
         else
-            -- TODO: error?
+            -- TODO: raise an error?
         end
     end,
 }
@@ -63,10 +63,12 @@ end
 --
 
 (function() setfenv(1, route_env)
--- NOTE: glorious trick to setup a different environment for routes. Lua functions
---       inherits the environment in which they are *created*!
--- TODO: we should create a function like setup_route_environment(fun)
+-- This is a glorious trick to setup a different environment for routes since
+-- Lua functions inherits the environment in which they are *created*! This
+-- will not be compatible with Lua 5.2, for which the new _ENV should provide
+-- a much more clean way to achieve a similar result.
 
+   -- TODO: Create a function like setup_route_environment(fun)
     local templating_engines = {
         haml     = function(template, options, locals)
             local haml = haml.new(options)
@@ -96,7 +98,7 @@ end
         pass = function()
             coroutine.yield({ pass = true })
         end,
-        -- NOTE: we use a table to group template-related methods to prevent name clashes.
+        -- Use a table to group template-related methods to prevent name clashes.
         t    = setmetatable({ }, {
             __index = function(env, name)
                 local engine = templating_engines[name]
@@ -171,9 +173,9 @@ function compile_url_pattern(pattern)
         params   = { },
     }
 
-    -- NOTE: Lua pattern matching is blazing fast compared to regular
-    --       expressions, but at the same time it is tricky when you
-    --       need to mimic some of their behaviors.
+    -- Lua pattern matching is blazing fast compared to regular expressions,
+    -- but at the same time it is tricky when you need to mimic some of
+    -- their behaviors.
     pattern = pattern:gsub("[%(%)%.%%%+%-%%?%[%^%$%*]", function(char)
         if char == '*' then return ':*' else return '%' .. char end
     end)
@@ -246,8 +248,8 @@ function router(application, state, request, response)
 end
 
 function initialize(application, wsapi_env)
-    -- TODO: taken from Orbit! It will change soon to adapt
-    --       request and response to a more suitable model.
+    -- TODO: Taken from Orbit! It will change soon to adapt request
+    --       and response to a more suitable model.
     local web = {
         status   = 200,
         headers  = { ["Content-Type"]= "text/html" },
@@ -305,7 +307,7 @@ function run(application, wsapi_env)
 
         local output_type = type(output)
         if output_type == 'function' then
-            -- first attempt at streaming responses using coroutines
+            -- First attempt at streaming responses using coroutines.
             return response.status, response.headers, coroutine.wrap(output)
         elseif output_type == 'string' then
             response:write(output)
