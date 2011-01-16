@@ -305,6 +305,11 @@ function run(application, wsapi_env)
             return error_500(response, output)
         end
 
+        if not output then
+            -- render an empty body
+            return response:finish()
+        end
+
         local output_type = type(output)
         if output_type == 'function' then
             -- First attempt at streaming responses using coroutines.
@@ -316,7 +321,7 @@ function run(application, wsapi_env)
             response:write(output.template(getfenv(route)) or 'template rendered an empty body')
             return response:finish()
         else
-            if not output.pass or not success then
+            if not output.pass then
                 return error_500(response, output)
             end
         end
