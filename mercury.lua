@@ -92,9 +92,11 @@ end
     }
 
     local route_methods = {
-        pass   = function() error({ pass = true }) end,
+        pass = function()
+            coroutine.yield({ pass = true })
+        end,
         -- NOTE: we use a table to group template-related methods to prevent name clashes.
-        t   = setmetatable({ }, {
+        t    = setmetatable({ }, {
             __index = function(env, name)
                 local engine = templating_engines[name]
 
@@ -103,10 +105,7 @@ end
                 end
 
                 return function(...)
-                    -- TODO: seriously, using error() here goes beyond being hackish.
-                    --       Moving everything to a coroutine-based dispatch to avoid
-                    --       using return in the routes could be a viable solution.
-                    error({ template = engine(...) })
+                    coroutine.yield({ template = engine(...) })
                 end
             end
         }),
@@ -285,26 +284,24 @@ function run(application, wsapi_env)
     local state, request, response = initialize(application, wsapi_env)
 
     for route in router(application, state, request, response) do
-        local successful, res = xpcall(route, debug.traceback)
+        local coroute = coroutine.create(route)
+        local success, output = coroutine.resume(coroute)
+        local output_type = type(output)
 
-        if successful then
-            if type(res) == 'function' then
-                -- first attempt at streaming responses using coroutines
-                return response.status, response.headers, coroutine.wrap(res)
-            else
-                response:write(res or '')
-                return response:finish()
-            end
+        if output_type == 'function' then
+            -- first attempt at streaming responses using coroutines
+            return response.status, response.headers, coroutine.wrap(output)
+        elseif output_type == 'string' then
+            response:write(output)
+            return response:finish()
+        elseif output.template then
+            response:write(output.template(getfenv(route)) or 'template rendered an empty body')
+            return response:finish()
         else
-            if res and res.template then
-                response:write(res.template(getfenv(route)) or 'template rendered an empty body')
-                return response:finish()
-            end
-
-            if not res.pass then
+            if not output.pass then
                 response.status  = 500
                 response.headers = { ['Content-type'] = 'text/html' }
-                response:write('<pre>' .. res:gsub("\n", "<br/>") .. '</pre>')
+                response:write('<pre>' .. output:gsub("\n", "<br/>") .. '</pre>')
                 return response:finish()
             end
         end
