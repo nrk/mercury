@@ -154,6 +154,13 @@ function add_route(verb, path, handler, options)
     })
 end
 
+function error_500(response, output)
+    response.status  = 500
+    response.headers = { ['Content-type'] = 'text/html' }
+    response:write('<pre>' .. output:gsub("\n", "<br/>") .. '</pre>')
+    return response:finish()
+end
+
 function compile_url_pattern(pattern)
     local compiled_pattern = {
         original = pattern,
@@ -287,8 +294,12 @@ function run(application, wsapi_env)
     for route in router(application, state, request, response) do
         local coroute = coroutine.create(route)
         local success, output = coroutine.resume(coroute)
-        local output_type = type(output)
 
+        if not success then
+            return error_500(response, output)
+        end
+
+        local output_type = type(output)
         if output_type == 'function' then
             -- first attempt at streaming responses using coroutines
             return response.status, response.headers, coroutine.wrap(output)
@@ -299,11 +310,8 @@ function run(application, wsapi_env)
             response:write(output.template(getfenv(route)) or 'template rendered an empty body')
             return response:finish()
         else
-            if not output.pass then
-                response.status  = 500
-                response.headers = { ['Content-type'] = 'text/html' }
-                response:write('<pre>' .. output:gsub("\n", "<br/>") .. '</pre>')
-                return response:finish()
+            if not output.pass or not success then
+                return error_500(response, output)
             end
         end
     end
