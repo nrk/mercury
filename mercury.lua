@@ -157,7 +157,11 @@ end
 function error_500(response, output)
     response.status  = 500
     response.headers = { ['Content-type'] = 'text/html' }
-    response:write('<pre>' .. output:gsub("\n", "<br/>") .. '</pre>')
+    response:write(
+        '<pre>An error has occurred while serving this page.\n\n' ..
+        'Error details:\n' .. output:gsub("\n", "<br/>") ..
+        '</pre>'
+    )
     return response:finish()
 end
 
