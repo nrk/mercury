@@ -1,3 +1,5 @@
+ * Change the directory layout of the repository.
+
  * Write docs, more samples and a test suite.
 
  * Implement before/after hooks (using coroutines).
