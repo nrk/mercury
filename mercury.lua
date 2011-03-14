@@ -92,6 +92,13 @@ end
                 return lp.fill(template, mercury_env.merge_tables(env, values))
             end
         end,
+        codegen  = function(template, top, values)
+            local CodeGen = require 'CodeGen'
+            return function(env)
+                local tmpl = CodeGen(template, values, env)
+                return tmpl(top)
+            end
+        end,
     }
 
     local route_methods = {

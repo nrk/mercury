@@ -53,6 +53,9 @@ example applications from the root directory of the project like this:
  * Norman Clarke (http://github.com/norman)
    Rockspec file for LuaRocks and various fixes.
 
+ * Francois Perrad (http://github.com/fperrad)
+   Support for CodeGen as a templating engine for Mercury.
+
 -- Notes -----------------------------------------------------------------------
 
 Want to help or contribute? Drop me a mail to suppakilla{at}gmail.com
